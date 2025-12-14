@@ -71,17 +71,17 @@ No frameworks, build tools, or external dependencies are used.
 ---
 
 ## File Structure
-index.html
-├── Embedded CSS
-│ ├── Layout and theming
-│ ├── Book and page animations
-│ └── Visual effects
-└── Embedded JavaScript
-├── Entry state management
-├── Date navigation
-├── Image handling
-├── LocalStorage persistence
-└── Export functionality
+index.html <br>
+├── Embedded CSS <br>
+│ ├── Layout and theming <br>
+│ ├── Book and page animations <br>
+│ └── Visual effects <br>
+└── Embedded JavaScript <br>
+├── Entry state management <br>
+├── Date navigation <br>
+├── Image handling <br>
+├── LocalStorage persistence <br>
+└── Export functionality <br>
 
 ---
 
@@ -139,3 +139,4 @@ Instagram: https://www.instagram.com/ds_all_official/
 
 MIT License  
 This project is free to use, modify, and distribute.
+
