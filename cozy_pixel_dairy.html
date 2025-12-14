@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Cozy Pixel Diary</title>
+<style>
+:root{--bg:#1e1a24;--paper:#f3e7c9;--ink:#3b2f2f;--accent:#c47a3c}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(#2a2436,var(--bg));font-family:'Courier New',monospace;color:var(--ink)}
+button{font-family:inherit}
+
+/* Home */
+#home {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  height:100vh
+}
+.nook {
+  background:#2b221a;
+  border:6px solid #4a3624;
+  padding:24px;
+  box-shadow:0 20px 60px #000;
+  position:relative;
+  transform: translateX(-80px);
+}
+.nook:after {
+  content:'';
+  position:absolute;
+  inset:0;
+  background:radial-gradient(transparent 60%,rgba(255,200,120,.08));
+  animation:glow 4s ease-in-out infinite;
+  pointer-events:none
+}
+
+@keyframes glow{
+  0%,100% {
+    opacity:.4
+  }
+  50%{
+    opacity:.8
+  }
+}
+
+.nav-col{
+  margin: 0 40px; /* ← increase this value if needed */
+  z-index: 20;
+}
+
+.book {
+  width:160px;
+  height:180px;
+  background:#5b3a29;
+  border:4px solid #3a2418;
+  cursor:pointer;
+  position:relative;
+  box-shadow:0 8px 0 #2a1c14,0 14px 24px #000
+}
+
+.book.editing {
+  cursor:default
+}
+
+.book .spine {
+  position:absolute;
+  right:-8px;
+  top:4px;
+  width:8px;
+  height:calc(100% - 8px);
+  background:repeating-linear-gradient(#e0cfa8,#e0cfa8 3px,#cbb58e 3px,#cbb58e 6px)
+}
+.book:after {
+  content:attr(data-title);
+  position:absolute;
+  top:38%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  color:#e6cfa3;
+  font-size:16px;
+  text-shadow:1px 1px 0 #000;
+  text-align:center;
+  white-space:nowrap;
+  pointer-events:none
+}
+
+.book
+[data-subtitle='']::before {
+  content:'— a quiet place for your thoughts —';
+  opacity:.85
+}
+.book[data-title='']::after {
+  content:'Untitled Diary';
+  opacity:.6
+}
+.book.editing:after,
+.book.editing:before {
+  content:''
+}
+
+.decor {
+  margin-top:36px;
+  font-size:12px;
+  color:#e6cfa3
+}
+
+/* Diary */
+#diary {
+  display:none;
+  height:100vh;
+  align-items:center;
+  justify-content:center
+}
+
+#topbar {
+  position:fixed;
+  top:12px;
+  left:50%;
+  transform:translateX(-50%);
+  display:flex;
+  gap:8px;
+  z-index:10
+}
+
+.nav-col {
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:6px
+}
+.nav-arrow {color:#e6cfa3;
+  font-size:28px;
+  cursor:pointer;
+  user-select:none
+}
+
+.nav-arrow.jump {
+  font-size:20px;
+  opacity:.8;
+  position: relative;
+  z-index: 30;
+}
+
+.nav-arrow.jump::after{
+  content: attr(data-tip);
+  position: absolute;
+  bottom: 140%;               /* move above arrow */
+  left: 50%;
+  transform: translateX(-50%);
+  background: #3a2418;
+  color: #e6cfa3;
+  padding: 4px 6px;
+  font-size: 10px;
+  white-space: nowrap;
+  border: 2px solid #2a1c14;
+  box-shadow: 0 2px 0 #000;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 100;               /* IMPORTANT */
+}
+
+.nav-arrow.jump:hover::after{
+  opacity: 1;
+}
+
+.book-ui {
+  width:90vw;
+  max-width:900px;
+  height:70vh;
+  z-index: 5;
+  background:#3b2f2f;
+  display:grid;
+  grid-template-columns:1fr 24px 1fr;
+  padding:12px;
+  position:relative;
+  box-shadow:inset -6px 0 0 #2a1c14,inset -12px 0 0 #241810,inset -18px 0 0 #1d120b;
+  animation:openBook .8s ease
+}
+
+.book-ui:after {content:'';
+  position:absolute;
+  right:-14px;
+  top:8px;
+  visibility: hidden;
+  width:14px;
+  height:calc(100% - 16px);
+  background:repeating-linear-gradient(#d6c6a1,#d6c6a1 3px,#cbb58e 3px,#cbb58e 6px)
+}
+
+.book-ui:before {
+  content:'';
+  position:absolute;
+  left:-10px;
+  top:8px;width:10px;
+  height:calc(100% - 16px);
+  background:#3a2418
+}
+
+.binding {
+  background:repeating-linear-gradient(#2a1c14,#2a1c14 4px,#3a2418 4px,#3a2418 8px)
+}
+
+.page {
+  background:var(--paper);
+  padding:16px;
+  overflow:auto;
+  position:relative;
+  border:4px solid #c9b38a;
+  box-shadow:inset -2px 0 0 #e6d7b3,inset -4px 0 0 #d2c19a,inset 2px 0 0 #fff8e6;
+  backface-visibility:hidden;
+  transform-style:preserve-3d
+}
+
+.page.turn-right {
+  animation:turnRight .7s ease forwards;
+  transform-origin:left center
+}
+
+.page.turn-left {
+  animation:turnLeft .7s ease forwards;
+  transform-origin:right center
+}
+
+@keyframes turnRight {
+  to {
+    transform:rotateY(-180deg)
+  }
+}
+
+@keyframes turnLeft {
+  to {
+    transform:rotateY(180deg)
+  }
+}
+
+@keyframes openBook {
+  from {
+    transform:scale(.6) rotateX(20deg);
+    opacity:0
+  }
+  to {
+    transform:none;
+    opacity:1
+  }
+}
+
+textarea {
+  width:100%;
+  height:90%;
+  background:transparent;
+  border:none;
+  resize:none;
+  font-size:14px;
+  color:var(--ink)
+}
+
+textarea:focus {
+  outline:none
+}
+
+.pixel-btn {
+  background:var(--accent);
+  border:2px solid #8b4f2a;
+  padding:4px 8px;
+  cursor:pointer
+}
+
+.pixel-select, .pixel-input, .pixel-file {
+  background:#e9ddc3;
+  border:3px solid #b89b6a;
+  color:var(--ink);
+  font-family:inherit;
+  padding:4px;
+  margin: 4px;
+  font-size:12px
+}
+
+.weather {
+  position:absolute;
+  top:8px;
+  right:8px
+}
+
+img.entry-img {
+  max-width:100px;
+  image-rendering:pixelated;
+  border:2px solid #8b4f2a
+}
+
+.cover-edit {
+  position:absolute;
+  top:6px;
+  right:6px;
+  font-size:12px;
+  color:#e6cfa3;
+  cursor:pointer;
+  background:#3a2418;
+  border:2px solid #2a1c14;
+  padding:2px
+}
+
+.cover-edit:hover {
+  background:#4a2d1d
+}
+
+.cover-title, .cover-subtitle {
+  position:absolute;
+  top:70%;left:50%;
+  transform:translate(-50%,-50%);
+  width:120px;
+  min-height:36px;
+  max-height:72px;
+  background:transparent;
+  border:none;color:#d9c4a1;
+  font-family:inherit;
+  font-size:12px;
+  text-align:center;
+  display:none;
+  resize:none;
+  overflow:hidden;
+  line-height:1.3
+}
+
+.cover-title {
+  position:absolute;
+  top:38%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  width:120px;
+  color:#e6cfa3;
+  font-size:16px;
+  text-align:center;
+  display:none
+}
+
+.cover-divider {
+  position:absolute;
+  top:32%;
+  left:50%;
+  transform:translateX(-50%);
+  width:60px;
+  height:2px;
+  background:repeating-linear-gradient(to right,#d9c4a1,#d9c4a1 6px,transparent 6px,transparent 10px);
+  opacity:.8
+}
+
+.book.editing .cover-divider {
+  display:none
+}
+
+@keyframes closeBook {
+  from{
+    transform:none;
+    opacity:1
+  }
+  to {
+    transform:scale(.6) rotateX(20deg);
+    opacity:0
+  }
+}
+
+#diary.closing .book-ui {
+  animation:closeBook .6s ease forwards
+}
+
+.cover-subtitle-static {
+  position:absolute;
+  top:55%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  width:120px;
+  color:#d9c4a1;
+  font-size:12px;
+  text-shadow:1px 1px 0 #000;
+  text-align:center;
+  line-height:1.3;
+  pointer-events:none
+}
+
+.book.editing .cover-divider, .book.editing .cover-subtitle-static {
+  display:none
+}
+
+.book:after{
+  top: 24%;   /* was ~38% */
+}
+
+.side-table{
+  position:absolute;
+  top:0;
+  right:2px;          /* hides half of it */
+  width:360px;
+  height:100%;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      #3a2a1c 0px,
+      #3a2a1c 26px,
+      #2e2116 26px,
+      #2e2116 52px
+    );
+  box-shadow:-12px 0 30px rgba(0,0,0,.6);
+  z-index:1;
+}
+
+.clipboard-ui{
+  position:absolute;
+  right:40px;
+  top:50%;
+  transform:translateY(-50%);
+  width:260px;
+  z-index:5;
+}
+
+.clip-pin{
+  text-align:center;
+  font-size:22px;
+  margin-bottom:-6px;
+}
+
+.clipboard-paper{
+  /* Base color for the paper */
+  background: #f6ecd1;
+  border: 4px solid #c9b38a;
+  padding: 14px;
+  box-shadow:
+    0 6px 0 #b8a179,
+    0 14px 30px rgba(0,0,0,.5);
+  font-size: 12px;
+
+  /* --- Start: Texture Addition --- */
+  background-image: 
+    /* 1. Subtle horizontal lines/fiber pattern */
+    linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+    /* 2. Very subtle noise/grain effect */
+    repeating-linear-gradient(90deg, 
+      rgba(150, 110, 60, 0.06), /* Darker color for texture */
+      rgba(150, 110, 60, 0.06) 1px, 
+      transparent 1px, 
+      transparent 2px
+    );
+  background-size: 100% 4px, 4px 100%; /* Size for the two background layers */
+  /* --- End: Texture Addition --- */
+}
+
+.clip-name{
+  text-align:center;
+  margin:0;
+}
+
+.clip-socials div{
+  font-size:11px;
+  opacity:.85;
+}
+
+.clip-notes{
+  margin-top:8px;
+  font-size:11px;
+  opacity:.8;
+}
+
+.clip-story{
+  margin:8px 0;
+  font-style:italic;
+  opacity:.85;
+}
+
+.clipboard-paper label{
+  display:block;
+  margin-top:8px;
+  font-weight:bold;
+}
+
+.clipboard-paper input,
+.clipboard-paper textarea{
+  width:100%;
+  /* Base color for the paper field */
+  background:#fff8e6;
+  border:2px solid #b89b6a;
+  font-family:inherit;
+  font-size:12px;
+
+  /* --- Start: Texture Addition for Inputs --- */
+  background-image: 
+    linear-gradient(rgba(0, 0, 0, 0.02) 1px, transparent 1px),
+    repeating-linear-gradient(90deg, 
+      rgba(150, 110, 60, 0.05), 
+      rgba(150, 110, 60, 0.05) 1px, 
+      transparent 1px, 
+      transparent 2px
+    );
+  background-size: 100% 4px, 4px 100%;
+  /* --- End: Texture Addition for Inputs --- */
+}
+.desk-toggle{
+  position:fixed;
+  top:12px;
+  right:12px;
+  z-index:20;
+}
+
+.clip-socials a{
+  color:#3b2f2f;          /* same ink color */
+  text-decoration:none;  /* remove underline */
+}
+
+.clip-socials a:hover{
+  color:#8b4f2a;          /* warm accent on hover */
+  text-decoration:underline;
+}
+
+
+/* Add this to your existing <style> block */
+
+@keyframes floating-star {
+    0% { transform: translateY(0) scale(1); opacity: 1; }
+    50% { transform: translateY(-50px) scale(1.2); opacity: 0.5; }
+    100% { transform: translateY(-100px) scale(0.8); opacity: 0; }
+}
+
+.star-field {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.star {
+    position: absolute;
+    width: 5px;
+    height: 5px;
+    background-color: var(--paper); /* Faded yellow/parchment color */
+    border-radius: 50%;
+    box-shadow: 0 0 5px var(--accent); /* Accent-colored glow */
+    animation: floating-star 5s infinite ease-out;
+}
+
+/* Positioning and timing for individual stars to create a loop */
+.star:nth-child(1) { top: 10%; left: 20%; animation-delay: 0s; }
+.star:nth-child(2) { top: 50%; left: 80%; animation-delay: 1s; }
+.star:nth-child(3) { top: 80%; left: 5%; animation-delay: 2s; }
+.star:nth-child(4) { top: 30%; left: 60%; animation-delay: 3s; }
+.star:nth-child(5) { top: 90%; left: 40%; animation-delay: 4s; }
+.star:nth-child(6) { top: 5%; left: 95%; animation-delay: 0.5s; }
+.star:nth-child(7) { top: 70%; left: 10%; animation-delay: 2.5s; }
+.star:nth-child(8) { top: 40%; left: 45%; animation-delay: 3.5s; }
+.star:nth-child(9) { top: 20%; left: 70%; animation-delay: 1.5s; }
+.star:nth-child(10) { top: 60%; left: 30%; animation-delay: 4.5s; }
+
+</style>
+</head>
+<body>
+<div class="star-field">
+        <div class="star"></div>
+        <div class="star"></div>
+        <div class="star"></div>
+        <div class="star"></div>
+        <div class="star"></div>
+        <div class="star"></div>
+        <div class="star"></div>
+        <div class="star"></div>
+        <div class="star"></div>
+        <div class="star"></div>
+    </div>
+<div id="home">
+  <button id="toggleDesk" class="pixel-btn desk-toggle">🪵 Desk</button>
+
+  <div class="side-table">
+    <div class="clipboard-ui" id="clipboardUI">
+      <div class="clip-pin">📎</div>
+
+      <div class="clipboard-paper">
+        <h3 class="clip-name">Created by Danish Shaikh</h3>
+
+        <div class="clip-socials">
+          <div><a href="https://www.instagram.com/ds_all_official/" target="_blank">📸 instagram</a></div>
+          <div><a href="https://www.linkedin.com/in/ds-all" target="_blank">💼 linkedin</a></div>
+          <div><a href="https://github.com/DS-All" target="_blank">🐙 github</a></div>
+        </div>
+        <div class="clip-notes">
+          <div>🗓 12 Mar</div>
+          <div>✎ Write daily</div>
+          <div>☕ Slow mornings</div>
+        </div>
+        <div class="clip-story">
+          “A quiet place to return to every night.”
+        </div>
+        <hr/>
+        <label>Diary Title</label>
+        <input id="clipTitle"/>
+        <label>Sub-title</label>
+        <textarea id="clipSubtitle" rows="3"></textarea>
+        <label>Decor</label>
+        <input id="clipDecor"/>
+    </div>
+  </div>
+</div>
+  <div class="nook">
+    <div class="book" id="openBookBtn" data-title="Diary" data-subtitle="— a quiet place for your thoughts —">
+      <div class="spine"></div>
+      <div class="cover-divider"></div>
+      <div class="cover-subtitle-static" id="coverSubtitle"></div>
+      <input id="titleInput" class="cover-title" placeholder="Diary title" />
+      <textarea id="subtitleInput" class="cover-subtitle" rows="3" placeholder="A short description…"></textarea>
+    </div>
+    <div class="decor">☕ Pixel Tea • 🐈 Sleeping Cat • 🕯 Candle</div>
+  </div>
+</div>
+
+<div id="diary">
+  <div id="topbar">
+    <button class="pixel-btn" id="closeBtn">📕 Close</button>
+    <button class="pixel-btn" id="saveBtn">💾 Save</button>
+    <button class="pixel-btn" id="pdfBtn">📄 Export PDF</button>
+    <button class="pixel-btn" id="deletePageBtn">🗑 Reset Page</button>
+
+  </div>
+
+  <div class="nav-col">
+    <div class="nav-arrow jump" id="jumpBack">⏮</div>
+    <div class="nav-arrow" id="prevBtn">&lt;</div>
+  </div>
+
+  <div class="book-ui">
+    <div class="page" id="left">
+      <h2 id="date"></h2>
+      <label style="font-size:12px">Vibe:</label>
+      <select class="pixel-select" id="vibeSelect">
+        <option value="">—</option>
+        <option value="☀">Happy</option>
+        <option value="🌿">Calm</option>
+        <option value="🕯">Cozy</option>
+        <option value="☾">Tired</option>
+        <option value="✎">Focused</option>
+        <option value="✨">Inspired</option>
+        <option value="☁">Anxious</option>
+        <option value="☂">Sad</option>
+        <option value="🍂">Reflective</option>
+        <option value="🌱">Hopeful</option>
+        <option value="⚡">Stressed</option>
+        <option value="📼">Nostalgic</option>
+      </select>
+      <div id="imgWrap"></div>
+      <input class="pixel-file" id="fileInput" type="file" accept="image/*" />
+    </div>
+    <div class="binding"></div>
+    <div class="page" id="right">
+      <div class="weather" id="weather"></div>
+      <textarea id="text" placeholder="Write your day..."></textarea>
+      <input class="pixel-input" placeholder="#tags" />
+    </div>
+  </div>
+
+  <div class="nav-col">
+    <div class="nav-arrow jump" id="jumpForward">⏭</div>
+    <div class="nav-arrow" id="nextBtn">&gt;</div>
+  </div>
+</div>
+
+<script>
+window.addEventListener('DOMContentLoaded',()=>{
+  const savedTitle=localStorage.getItem('diary-cover-title');
+  const savedSubtitle=localStorage.getItem('diary-cover-subtitle');
+  const bookEl=document.getElementById('openBookBtn');
+  if(savedTitle!==null) bookEl.dataset.title=savedTitle;
+  if(savedSubtitle!==null) bookEl.dataset.subtitle=savedSubtitle;
+  const home=document.getElementById('home');
+  const diary=document.getElementById('diary');
+  const editTitleBtn=document.getElementById('editTitle');
+  const coverSubtitle=document.getElementById('coverSubtitle');
+  const titleInput=document.getElementById('titleInput');
+  const subtitleInput=document.getElementById('subtitleInput');
+
+  const dateEl=document.getElementById('date');
+  const textEl=document.getElementById('text');
+  const weatherEl=document.getElementById('weather');
+  const imgWrap=document.getElementById('imgWrap');
+  const left=document.getElementById('left');
+  const right=document.getElementById('right');
+  const clipTitle = document.getElementById('clipTitle');
+  const clipSubtitle = document.getElementById('clipSubtitle');
+  const clipDecor = document.getElementById('clipDecor');
+
+  document.getElementById('deletePageBtn').onclick = () => {
+  if(confirm('Clear this page?')){
+    localStorage.removeItem(key(day));
+    load();
+  }
+};
+
+clipTitle.value = bookEl.dataset.title || '';
+clipSubtitle.value = bookEl.dataset.subtitle || '';
+clipDecor.value = document.querySelector('.decor').textContent;
+
+clipTitle.oninput = () => {
+  bookEl.dataset.title = clipTitle.value;
+  localStorage.setItem('diary-cover-title', clipTitle.value);
+};
+
+clipSubtitle.oninput = () => {
+  bookEl.dataset.subtitle = clipSubtitle.value;
+  localStorage.setItem('diary-cover-subtitle', clipSubtitle.value);
+  syncCoverSubtitle();
+};
+
+clipDecor.oninput = () => {
+  document.querySelector('.decor').textContent = clipDecor.value;
+};
+
+  let day=new Date();
+  const key=d=>`diary-${d.toDateString()}`;
+
+  bookEl.addEventListener('click',e=>{
+    if(bookEl.classList.contains('editing')){
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      return false;
+    }
+    openDiary();
+  },true);
+
+  subtitleInput.onblur=titleInput.onblur=()=>{
+    bookEl.dataset.title=titleInput.value.trim();
+    bookEl.dataset.subtitle=subtitleInput.value.trim();
+    localStorage.setItem('diary-cover-title',bookEl.dataset.title);
+    localStorage.setItem('diary-cover-subtitle',bookEl.dataset.subtitle);
+    bookEl.dataset.title=titleInput.value.trim();
+    bookEl.dataset.subtitle=subtitleInput.value.trim();
+    titleInput.style.display='none';
+    subtitleInput.style.display='none';
+    bookEl.classList.remove('editing');
+    syncCoverSubtitle();
+  };
+
+  document.getElementById('closeBtn').onclick=closeDiary;
+  document.getElementById('saveBtn').onclick=manualSave;
+  document.getElementById('pdfBtn').onclick=exportPDF;
+  document.getElementById('prevBtn').onclick=()=>navigate(-1);
+  document.getElementById('nextBtn').onclick=()=>navigate(1);
+  document.getElementById('vibeSelect').onchange=e=>setVibe(e.target.value);
+  document.getElementById('fileInput').onchange=e=>addImage(e.target.files[0]);
+  document.getElementById('toggleDesk').onclick = () => {
+  const ui = document.getElementById('clipboardUI');
+  const table = document.querySelector('.side-table');
+  const hidden = ui.style.display === 'none';
+  ui.style.display = hidden ? 'block' : 'none';
+  table.style.display = hidden ? 'block' : 'none';
+};
+
+  function openDiary() {
+    home.style.display='none';
+    diary.style.display='flex';
+    load();
+    updateJumpArrows()
+  }
+
+  function syncCoverSubtitle(){
+    const s=bookEl.dataset.subtitle?.trim();
+    coverSubtitle.textContent=s||'— a quiet place for your thoughts —';
+  }
+  function closeDiary(){
+    diary.classList.add('closing');
+    setTimeout(()=>{
+      diary.style.display='none';
+      diary.classList.remove('closing');
+      home.style.display='flex';
+    },600);
+  }
+  function load(){
+    dateEl.textContent=day.toDateString();
+    const d=JSON.parse(localStorage.getItem(key(day))||'{}');
+    textEl.value=d.text||'';
+    weatherEl.textContent=d.vibe||'';
+    imgWrap.innerHTML=d.img?`<img class='entry-img' src='${d.img}'/>`:'';
+    imgWrap.innerHTML = '';
+    (d.imgs || []).forEach(src => {
+    const wrap = document.createElement('div');
+    wrap.className = 'img-item';
+
+    const im = document.createElement('img');
+    im.src = src;
+    im.className = 'entry-img';
+
+    const rm = document.createElement('div');
+    rm.textContent = '✕';
+    rm.className = 'img-remove';
+    rm.onclick = () => { wrap.remove(); save(); };
+
+    wrap.append(im, rm);
+    imgWrap.appendChild(wrap);});
+  }
+
+  function save(){
+  const imgs = [...imgWrap.querySelectorAll('img')].map(i => i.src);
+  localStorage.setItem(
+    key(day),
+    JSON.stringify({
+      text: textEl.value,
+      vibe: weatherEl.textContent,
+      imgs
+    })
+  );
+}
+
+  function manualSave() {
+    save();
+    alert('Saved 📖')
+  }
+
+  function navigate(dir){
+    day.setDate(day.getDate()+dir);
+    animateTurn(dir>0?'right':'left');
+    load();
+    updateJumpArrows();
+  }
+
+  function setVibe(v) {
+    weatherEl.textContent=v;save()
+  }
+
+  function addImage(file) {
+    if(!file) return;
+
+    if(imgWrap.children.length >= 3){
+      alert('Only 3 images allowed per page');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const wrap = document.createElement('div');
+      wrap.className = 'img-item';
+
+      const im = document.createElement('img');
+      im.src = reader.result;
+      im.className = 'entry-img';
+
+      const rm = document.createElement('div');
+      rm.textContent = '✕';
+      rm.className = 'img-remove';
+      rm.onclick = () => { wrap.remove(); save(); };
+
+      wrap.append(im, rm);
+      imgWrap.appendChild(wrap);
+      save();
+    };
+    reader.readAsDataURL(file);
+  }
+
+
+  function animateTurn(dir){
+    const p=dir==='right'?right:left;
+    p.classList.add(dir==='right'?'turn-right':'turn-left');
+    setTimeout(()=>p.classList.remove('turn-right','turn-left'),700);
+  }
+
+  function getAllDates() {
+    return Object.keys(localStorage).filter(k=>k.startsWith('diary-')).map(k=>new Date(k.replace('diary-',''))).sort((a,b)=>a-b)}
+
+  function updateJumpArrows(){
+    const dates=getAllDates();
+    const back=dates.filter(d=>d<day).pop();
+    const fwd=dates.find(d=>d>day);
+    const jb=document.getElementById('jumpBack');
+    const jf=document.getElementById('jumpForward');
+    if(back){jb.style.visibility='visible';jb.dataset.tip=back.toDateString();jb.onclick=()=>{day=new Date(back);load();updateJumpArrows()}}else jb.style.visibility='hidden';
+    if(fwd){jf.style.visibility='visible';jf.dataset.tip=fwd.toDateString();jf.onclick=()=>{day=new Date(fwd);load();updateJumpArrows()}}else jf.style.visibility='hidden';
+  }
+
+  function exportPDF(){
+  const win = window.open('', '_blank');
+  if(!win){
+    alert('Popup blocked. Allow popups to export PDF.');
+    return;
+  }
+
+  // --- Vibe system ---
+  const VIBE_MAP = {
+    '☀': 'Happy',
+    '🌿': 'Calm',
+    '🕯': 'Cozy',
+    '☾': 'Tired',
+    '✎': 'Focused',
+    '✨': 'Inspired',
+    '☁': 'Anxious',
+    '☂': 'Sad',
+    '🍂': 'Reflective',
+    '🌱': 'Hopeful',
+    '⚡': 'Stressed',
+    '📼': 'Nostalgic'
+  };
+
+  let vibeSymbol = weatherEl.textContent || '☀';
+  let isDefault = !weatherEl.textContent;
+  let vibeText = isDefault
+    ? 'Default Happy'
+    : (VIBE_MAP[vibeSymbol] || 'Unknown');
+
+  // --- Images ---
+  const imgs = [...imgWrap.querySelectorAll('img')]
+    .map(img => `
+      <img src="${img.src}"
+           style="width:120px;
+                  image-rendering:pixelated;
+                  margin:6px;
+                  border:2px solid #8b4f2a;">
+    `).join('');
+
+  // --- Write PDF HTML ---
+  win.document.write(`
+    <html>
+    <head>
+      <title>${dateEl.textContent}</title>
+      <style>
+        body{
+          font-family: Courier New, monospace;
+          background:#f3e7c9;
+          color:#3b2f2f;
+          padding:24px;
+        }
+        h1{font-size:18px;margin-bottom:6px}
+        .vibe{font-size:14px;margin-bottom:6px}
+        .entry{white-space:pre-wrap;font-size:14px;line-height:1.4}
+        .images{margin-top:12px}
+      </style>
+    </head>
+    <body>
+      <h1>${dateEl.textContent}</h1>
+      <div class="vibe">Vibe: ${vibeText}</div>
+      <div class="vibe">Symbol: ${isDefault ? 'Default* ' : ''}${vibeSymbol}</div>
+      <div class="entry">${textEl.value || ''}</div>
+      <div class="images">${imgs}</div>
+    </body>
+    </html>
+  `);
+
+  win.document.close();
+
+  // wait for render before print
+  win.onload = () => {
+    win.focus();
+    win.print();
+  };
+}
+
+
+
+  // --- Minimal runtime checks (tests) ---
+  console.assert(typeof openDiary==='function','openDiary should be defined');
+  console.assert(typeof closeDiary==='function','closeDiary should be defined');
+  syncCoverSubtitle();
+  console.assert(titleInput && subtitleInput,'Title inputs should exist');
+  console.assert(dateEl && textEl,'Core DOM elements should exist');
+});
+</script>
+</body>
+</html>
