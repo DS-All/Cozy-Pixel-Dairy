@@ -57,6 +57,9 @@ The application requires no installation, backend, or external libraries.
 - Includes date, mood, text, and images
 - Uses native browser print functionality
 
+## Project Demo
+
+[![Demo](https://img.shields.io/badge/Demo-Click_Here-D14836?style=flat&logo=Link&logoColor=white)](https://sparkly-pavlova-417634.netlify.app/)
 ---
 
 ## Technology
@@ -139,4 +142,5 @@ Instagram: https://www.instagram.com/ds_all_official/
 
 MIT License  
 This project is free to use, modify, and distribute.
+
 
